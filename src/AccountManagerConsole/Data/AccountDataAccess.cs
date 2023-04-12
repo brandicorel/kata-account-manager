@@ -1,15 +1,20 @@
-﻿namespace AccountManagerConsole
+﻿using AccountManagerConsole.Helper;
+using AccountManagerConsole.Models;
+
+namespace AccountManagerConsole
 {
     internal interface IAccountDataAccess
     {
-        IEnumerable<Transaction> LoadData();
+        Account Load();
     }
 
     internal class AccountDataAccess : IAccountDataAccess
     {
-        IEnumerable<Transaction> IAccountDataAccess.LoadData()
+        private const string AccountPath = "./Data/account.csv";
+
+        Account IAccountDataAccess.Load()
         {
-            return new List<Transaction>();
+            return AccountFileParser.Parse(AccountPath);
         }
     }
 }

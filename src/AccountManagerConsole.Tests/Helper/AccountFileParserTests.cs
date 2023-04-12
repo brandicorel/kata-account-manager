@@ -1,17 +1,79 @@
 ﻿using AccountManagerConsole.Helper;
 using AccountManagerConsole.Models;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+using AccountManagerConsole.Services;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace AccountManagerConsole.Tests.Helper
 {
     public class AccountFileParserTests
     {
+        [Fact]
+        public void Parse_Should_create_Account()
+        {
+            // Arrange
+            var input = @"Compte au 28/02/2023 : 8300.00 EUR
+EUR/JPY : 0.482
+EUR/USD : 1.445
+Date;Montant;Devise;Catégorie
+06/10/2022;-504.61;EUR;Loisir
+15/10/2022;-408.61;JPY;Transport";
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(input));
+            var expectedAccount = new Account()
+            {
+                AsOf = new DateTime(2023, 2, 28),
+                Balance = 8300,
+                Currency = "EUR",
+                Transactions = {
+                    new Transaction(new DateTime(2022, 10, 06),-504.61, "EUR", "Loisir"),
+                    new Transaction(new DateTime(2022, 10, 15),-408.61, "JPY", "Transport")
+                }
+            };
+            Forex[] expectedForex =
+            {
+                new Forex(new DateTime(2023, 2, 28), "EUR", "JPY", 0.482),
+                new Forex(new DateTime(2023, 2, 28), "EUR", "USD", 1.445)
+            };
+
+            // Act
+            var actual = AccountFileParser.Parse(stream);
+
+            // Assert
+            actual.Should().BeEquivalentTo(expectedAccount);
+            AssertForexExist(expectedForex);
+        }
+
+        [Fact]
+        public void IsAccountInfo_Should_match_correct_row()
+        {
+            // Arrange
+            var input = "Compte au 28/02/2023 : 8300.00 EUR";
+
+            // Act
+            var actual = AccountFileParser.IsAccountInfo(input);
+
+            // Assert
+            actual.Should().BeTrue();
+        }
+
+        [Fact]
+        public void ProcessAccountInfo_Should_create_AccountInfo()
+        {
+            // Arrange
+            var input = "Compte au 28/02/2023 : 123.45 EUR";
+            var expected = new Account
+            {
+                AsOf = new DateTime(2023, 2, 28),
+                Balance = 123.45,
+                Currency = "EUR"
+            };
+
+            // Act
+            var actual = AccountFileParser.ProcessAccountInfo(input);
+
+            // Assert
+            actual.Should().BeEquivalentTo(expected);
+        }
+
         [Theory]
         [InlineData("EUR")]
         [InlineData("EUR/JPY : 0.482")]
@@ -44,13 +106,7 @@ namespace AccountManagerConsole.Tests.Helper
             // Arrange
             var input = "EUR/JPY : 0.482";
             var date = new DateTime(2023, 1, 1);
-            var expected = new Forex
-            {
-                Date = date,
-                CcyFrom = "EUR",
-                CcyTo = "JPY",
-                Value = 0.482
-            };
+            var expected = new Forex(date, "EUR", "JPY", 0.482);
 
             // Act
             var actual = AccountFileParser.ProcessForex(input, date);
@@ -59,14 +115,36 @@ namespace AccountManagerConsole.Tests.Helper
             actual.Should().BeEquivalentTo(expected);
         }
 
-        private static void ProcessAccountInfo(string input)
+        [Fact]
+        public void ProcessTransactions_Should_create_transactions()
         {
-            throw new NotImplementedException();
+            // Arrange
+            var headers = "Date;Montant;Devise;Catégorie";
+            var input = @"06/10/2022;-504.61;EUR;Loisir
+15/10/2022;-408.61;JPY;Transport";
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(input));
+            using var reader = new StreamReader(stream);
+            Transaction[] expected =
+            {
+                new Transaction(new DateTime(2022, 10, 06),-504.61, "EUR", "Loisir"),
+                new Transaction(new DateTime(2022, 10, 15),-408.61, "JPY", "Transport")
+            };
+
+            // Act
+            var actual = AccountFileParser.ProcessTransactions(reader, headers);
+
+            // Assert
+            actual.Should().BeEquivalentTo(expected);
         }
 
-        private static void ProcessTransactions(StreamReader reader)
+        private static void AssertForexExist(Forex[] expectedForex)
         {
-            throw new NotImplementedException();
+            foreach (Forex expected in expectedForex)
+            {
+                var actual = ForexService.Singleton().Get(expected.CcyFrom, expected.CcyTo);
+                actual.Should().Be(expected.Value);
+            }
         }
+
     }
 }

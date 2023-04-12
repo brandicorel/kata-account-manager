@@ -7,15 +7,23 @@ namespace AccountManagerConsole.Services
     // - Manage multiple date and getLatest
     // - Expires/Refresh cache
     // - volatile + ConcurrentDictionnary in case of multithreading
-    internal class ForexService
+    public class ForexService
     {
-        private const string AccountPath = "/Data/account.csv";
+        private static ForexService instance = new();
+
+        public static ForexService Singleton()
+        {
+            return instance;
+        }
 
         private readonly Dictionary<(string, string), Forex> forexes = new();
 
-        public Forex Get(string ccyFrom, string ccyTo)
+        public double Get(string ccyFrom, string ccyTo)
         {
-            return this.forexes[(ccyFrom, ccyTo)];
+            if (ccyFrom == ccyTo)
+                return 1;
+
+            return forexes[(ccyFrom, ccyTo)].Value;
         }
 
         public void Add(Forex forex)
@@ -28,13 +36,8 @@ namespace AccountManagerConsole.Services
                 Value = 1 / forex.Value
             };
 
-            this.forexes.Add((forex.CcyFrom, forex.CcyTo), forex);
-            this.forexes.Add((invertForex.CcyFrom, invertForex.CcyTo), invertForex);
-        }
-
-        public void Refresh()
-        {
-
+            forexes.Add((forex.CcyFrom, forex.CcyTo), forex);
+            forexes.Add((invertForex.CcyFrom, invertForex.CcyTo), invertForex);
         }
     }
 }
