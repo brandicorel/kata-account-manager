@@ -3,7 +3,12 @@ using System.Globalization;
 
 internal class Program
 {
-    private static void Main(string[] args)
+    // TODO:
+    // - split into different projects
+    // - manage args
+    // Get top 3 categories
+    // loop and exit
+    public static void Main(string[] args)
     {
         Console.WriteLine("Account Manager Console");
 
@@ -18,6 +23,9 @@ internal class Program
 
         var balance = accountService.GetBalance(balanceDate);
         Console.WriteLine($"Account as of {balanceDate:yyyy-MM-dd}: {balance}");
+
+        // check date is valid
+        // display result
     }
 
     internal static bool ReadDate(out DateTime result)
@@ -26,9 +34,3 @@ internal class Program
         return DateTime.TryParse(input, CultureInfo.InvariantCulture, DateTimeStyles.None, out result);
     }
 }
-
-// check date is valid
-// display result
-
-// Get top 3 categories
-// loop and exit

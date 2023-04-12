@@ -12,7 +12,7 @@
             throw new NotImplementedException();
         }
 
-        internal decimal GetBalance(DateTime balanceDate)
+        internal double GetBalance(DateTime balanceDate)
         {
             if (!this.hasloaded)
                 this.Refresh();
